@@ -63,8 +63,8 @@ export function Navigation({ activeTab, onChange, isOpen, onClose }: Props) {
                 onClick={() => onChange(tab.id as any)}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-300 ${
                   isActive 
-                    ? 'bg-white/60 dark:bg-slate-800/80 text-blue-600 dark:text-blue-400 shadow-md border border-white/80 dark:border-slate-600' 
-                    : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/40 dark:hover:bg-slate-700/50 border border-transparent'
+                    ? 'bg-transparent text-blue-600 dark:text-blue-400 border border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.5)]' 
+                    : 'bg-transparent text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-transparent hover:border-slate-300 dark:hover:border-slate-700'
                 }`}
               >
                 <Icon className={`w-5 h-5 ${isActive ? 'text-blue-500' : 'text-slate-500'}`} />

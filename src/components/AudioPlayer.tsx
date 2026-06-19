@@ -2,21 +2,31 @@ import React, { useState, useRef, useEffect } from 'react';
 import { usePlayer } from '../context/PlayerContext';
 import { 
   Play, Pause, Volume2, VolumeX, Moon, Share2, Type, 
-  Settings2, Disc, Settings, AlertCircle, Clock
+  Settings2, Disc, Settings, AlertCircle, Clock,
+  X, ChevronDown, ChevronUp, Music
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
-export function AudioPlayer() {
+export function AudioPlayer({ isSidebarOpen }: { isSidebarOpen?: boolean }) {
   const { 
     currentStation, isPlaying, volume, quality, 
     togglePlayPause, setVolume, setQuality, 
     startSleepTimer, cancelSleepTimer,
     sleepTimerActive, sleepTimerHours, sleepTimerMinutes,
-    isBuffering
+    isBuffering, stopStation
   } = usePlayer();
 
   const [showSettings, setShowSettings] = useState(false);
+  const [showQuality, setShowQuality] = useState(false);
   const [timerInput, setTimerInput] = useState('30');
+  const [isMinimized, setIsMinimized] = useState(false);
+  
+  useEffect(() => {
+    if (isSidebarOpen) {
+      setIsMinimized(true);
+    }
+  }, [isSidebarOpen]);
+
   
   // A local recording state (we do a visual mock or use MediaRecorder if stream allows)
   const [isRecording, setIsRecording] = useState(false);
@@ -65,13 +75,7 @@ export function AudioPlayer() {
   };
 
   if (!currentStation) {
-    return (
-      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-900 border-t border-gray-200 dark:border-slate-800 p-4 transition-colors">
-        <div className="max-w-7xl mx-auto flex items-center justify-center text-gray-500 dark:text-slate-400">
-           اختر إذاعة للبدء بالاستماع
-        </div>
-      </div>
-    );
+    return null;
   }
 
   const formatTime = (seconds: number) => {
@@ -80,9 +84,45 @@ export function AudioPlayer() {
     return `${min}:${sec.toString().padStart(2, '0')}`;
   };
 
+  if (isMinimized) {
+    return (
+      <div className="fixed bottom-4 right-4 z-50">
+        <button 
+          onClick={() => setIsMinimized(false)}
+          className="w-14 h-14 bg-amber-500 hover:bg-amber-600 text-slate-900 rounded-full flex items-center justify-center shadow-2xl transition-transform hover:scale-110"
+        >
+          <ChevronUp className="w-8 h-8" />
+        </button>
+      </div>
+    );
+  }
+
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg border-t border-gray-200 dark:border-slate-800 p-4 transition-colors z-50">
-      <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center gap-4">
+    <div className="fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-t border-gray-200 dark:border-slate-800 p-4 transition-colors z-50 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] dark:shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
+      {/* Top handles: Minimize and Close */}
+      <div className="absolute top-0 right-0 left-0 -mt-10 flex justify-between px-4 pointer-events-none">
+        <div /> {/* spacing */}
+        <div className="flex gap-2 pointer-events-auto">
+          <button 
+            onClick={() => setIsMinimized(true)}
+            className="w-10 h-10 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-full flex items-center justify-center text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 shadow-md transition-all"
+            title="تصغير"
+          >
+            <ChevronDown className="w-6 h-6" />
+          </button>
+          <button 
+            onClick={() => {
+              stopStation();
+            }}
+            className="w-10 h-10 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-md transition-all"
+            title="إغلاق"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center gap-4 mt-2">
         
         {/* Station Info */}
         <div className="flex items-center gap-4 flex-1 w-full md:w-auto overflow-hidden">
@@ -134,7 +174,28 @@ export function AudioPlayer() {
         </div>
 
         {/* Right side settings & Volume */}
-        <div className="flex items-center justify-end gap-4 flex-1 w-full md:w-auto text-gray-600 dark:text-slate-300">
+        <div className="flex items-center justify-end gap-3 flex-1 w-full md:w-auto text-gray-600 dark:text-slate-300">
+           <div className="relative">
+             <button 
+               onClick={() => setShowQuality(!showQuality)}
+               className={`p-2 rounded-full transition-colors ${quality === 'high' ? 'text-amber-500' : 'hover:bg-gray-100 dark:hover:bg-slate-800'}`}
+               title="جودة الصوت"
+             >
+               <Music className="w-5 h-5" />
+             </button>
+             <AnimatePresence>
+               {showQuality && (
+                 <motion.div 
+                   initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}
+                   className="absolute bottom-full left-1/2 -translate-x-1/2 mb-4 w-40 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-gray-100 dark:border-slate-700 p-2 z-50"
+                 >
+                    <button onClick={() => { setQuality('high'); setShowQuality(false); }} className={`w-full text-center py-2 text-sm rounded ${quality === 'high' ? 'bg-amber-500 text-slate-950 font-bold' : 'hover:bg-gray-100 dark:hover:bg-slate-700'}`}>دقة عالية</button>
+                    <button onClick={() => { setQuality('low'); setShowQuality(false); }} className={`w-full text-center py-2 text-sm rounded ${quality === 'low' ? 'bg-amber-500 text-slate-950 font-bold' : 'hover:bg-gray-100 dark:hover:bg-slate-700'}`}>توفير البيانات</button>
+                 </motion.div>
+               )}
+             </AnimatePresence>
+           </div>
+
            <div className="group relative flex items-center gap-2">
              <Volume2 className="w-5 h-5" />
              <input 
@@ -160,26 +221,10 @@ export function AudioPlayer() {
                    initial={{ opacity: 0, y: 10 }}
                    animate={{ opacity: 1, y: 0 }}
                    exit={{ opacity: 0, y: 10 }}
-                   className="absolute bottom-full right-0 mb-4 w-64 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-gray-100 dark:border-slate-700 p-4"
+                   className="absolute bottom-full left-0 md:right-0 md:left-auto mb-4 w-64 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-gray-100 dark:border-slate-700 p-4"
                  >
                    <h4 className="font-medium text-gray-900 dark:text-white mb-3">إعدادات البث</h4>
                    
-                   {/* Quality setting */}
-                   <div className="mb-4">
-                     <label className="text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 block">جودة الصوت</label>
-                     <div className="flex rounded-lg overflow-hidden border border-gray-200 dark:border-slate-700">
-                       <button 
-                         onClick={() => setQuality('high')}
-                         className={`flex-1 text-xs py-1.5 transition-colors ${quality === 'high' ? 'bg-amber-500 text-slate-950 font-medium' : 'hover:bg-gray-50 dark:hover:bg-slate-700'}`}
-                       >دقة عالية</button>
-                       <button 
-                         onClick={() => setQuality('low')}
-                         className={`flex-1 text-xs py-1.5 transition-colors ${quality === 'low' ? 'bg-amber-500 text-slate-950 font-medium' : 'hover:bg-gray-50 dark:hover:bg-slate-700'}`}
-                         title="يقلل من استهلاك البيانات"
-                       >توفير البيانات</button>
-                     </div>
-                   </div>
-
                    {/* Sleep Timer */}
                    <div>
                      <label className="text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 flex items-center justify-between">

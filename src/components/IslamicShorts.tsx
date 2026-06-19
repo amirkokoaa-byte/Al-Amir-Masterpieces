@@ -95,10 +95,21 @@ const SHORTS_DATA = [
 ];
 
 export function IslamicShorts() {
+  const [shorts, setShorts] = useState<typeof SHORTS_DATA>(SHORTS_DATA);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('islamic_shorts');
+    if (saved) {
+      try {
+        setShorts(JSON.parse(saved));
+      } catch(e) {}
+    }
+  }, []);
+
   return (
     <div className="w-full max-w-[400px] mx-auto h-[75vh] min-h-[550px] bg-black rounded-3xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.5)] relative ring-1 ring-white/20">
       <div className="h-full w-full overflow-y-scroll snap-y snap-mandatory no-scrollbar bg-slate-900 scroll-smooth">
-        {SHORTS_DATA.map((short) => (
+        {shorts.map((short) => (
           <ShortItem key={short.id} data={short} />
         ))}
       </div>
@@ -174,12 +185,13 @@ function ShortItem({ data }: { data: typeof SHORTS_DATA[0] }) {
       {/* Audio Player */}
       <audio 
         ref={audioRef} 
-        src={data.audio_url} 
-        preload="auto"
+        preload="none"
         loop 
         playsInline 
         className="hidden" 
-      />
+      >
+        <source src={data.audio_url} type="audio/mpeg" />
+      </audio>
 
       {/* Play/Pause Overlay Icon */}
       <div className={`absolute inset-0 flex items-center justify-center pointer-events-none transition-opacity duration-300 ${!isPlaying ? 'opacity-100' : 'opacity-0'}`}>

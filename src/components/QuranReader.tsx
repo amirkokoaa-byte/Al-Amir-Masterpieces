@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { getSurahs, getSurahText, getSurahTafsir } from '../lib/islamicApi';
 import { Surah, SurahDetail, Ayah } from '../types/islamic';
-import { BookOpen, Copy, BookmarkPlus, Loader2, Play, Square, Volume2 } from 'lucide-react';
+import { BookOpen, Copy, BookmarkPlus, Loader2, Play, Square, Volume2, ChevronRight, ChevronLeft } from 'lucide-react';
 
 const RECITERS = [
   { id: 'ar.abdulbasitmurattal', name: 'عبد الباسط عبد الصمد' },
@@ -28,6 +28,21 @@ export function QuranReader({ viewMode = 'read' }: { viewMode?: 'read' | 'tafsir
   const [isTafsirPlaying, setIsTafsirPlaying] = useState<number | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
+  // Quran Paging State
+  const [currentPageIndex, setCurrentPageIndex] = useState(0);
+
+  // Group pages
+  const pages = useMemo(() => {
+    if (!surahText) return [];
+    if (viewMode !== 'read') return []; // Only paginate in read mode
+    const pgs: Record<number, typeof surahText.ayahs> = {};
+    surahText.ayahs.forEach(ayah => {
+      if (!pgs[ayah.page]) pgs[ayah.page] = [];
+      pgs[ayah.page].push(ayah);
+    });
+    return Object.values(pgs);
+  }, [surahText, viewMode]);
+
   useEffect(() => {
     fetchSurahs();
     const saved = localStorage.getItem('saved_tafsirs');
@@ -38,7 +53,8 @@ export function QuranReader({ viewMode = 'read' }: { viewMode?: 'read' | 'tafsir
   useEffect(() => {
     stopAudio();
     stopTafsirAudio();
-  }, [viewMode]);
+    setCurrentPageIndex(0);
+  }, [viewMode, selectedSurah]);
 
   const fetchSurahs = async () => {
     const list = await getSurahs();
@@ -219,56 +235,95 @@ export function QuranReader({ viewMode = 'read' }: { viewMode?: 'read' | 'tafsir
               </div>
             </div>
             
-            <div className="flex-1 overflow-y-auto pr-2 space-y-8 font-serif leading-loose text-xl text-justify custom-scrollbar">
+            <div className="flex-1 overflow-y-auto pr-2 font-serif leading-loose text-xl text-justify custom-scrollbar flex flex-col relative pb-16">
                {surahText.number !== 1 && surahText.number !== 9 && (
                  <div className="text-center font-bold text-2xl mb-8 text-amber-700 dark:text-amber-300 drop-shadow-md">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</div>
                )}
-               {surahText.ayahs.map((ayah, idx) => (
-                 <div key={ayah.numberInSurah} className="group relative break-words border-b border-gray-100/30 dark:border-slate-800/50 pb-6 mb-6 last:border-0 hover:bg-white/30 dark:hover:bg-black/20 p-4 rounded-2xl transition-all border border-transparent hover:border-white/20 backdrop-blur-sm">
-                   
-                   <p className={`mb-4 text-2xl leading-loose transition-colors ${playingAyah === ayah.number ? 'text-amber-600 dark:text-amber-400 font-bold' : ''}`}>
-                     {ayah.text} <span className="inline-flex items-center justify-center w-8 h-8 rounded-full border-2 border-amber-500/50 text-xs font-mono text-amber-600 dark:text-amber-400 mx-1 bg-amber-500/10 shadow-inner">{ayah.numberInSurah}</span>
-                   </p>
 
-                   <div className="flex gap-2 justify-end mb-2 opacity-50 group-hover:opacity-100 transition-opacity">
+               {viewMode === 'read' ? (
+                 <>
+                   {/* Book Mode Pagination Content */}
+                   <div className="flex-1 flex flex-col justify-center items-center px-4 md:px-12 transition-opacity duration-300">
+                     <p className="text-3xl leading-[2.5] text-justify">
+                       {pages[currentPageIndex]?.map((ayah) => (
+                         <span key={ayah.numberInSurah} className={`inline transition-colors ${playingAyah === ayah.number ? 'text-amber-600 dark:text-amber-400 font-bold bg-amber-500/10' : ''}`} onClick={() => playAyahAudio(ayah.number, surahText.number, ayah.numberInSurah)}>
+                           {ayah.text} <span className="inline-flex items-center justify-center w-8 h-8 rounded-full border border-amber-500/50 text-xs font-mono text-amber-600 dark:text-amber-400 mx-1 bg-amber-500/10 shadow-inner align-middle cursor-pointer hover:bg-amber-500/30">{ayah.numberInSurah}</span>
+                         </span>
+                       ))}
+                     </p>
+                   </div>
+                   
+                   {/* Pagination Controls */}
+                   <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between p-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-t border-amber-200 dark:border-slate-700 rounded-b-xl z-10">
                      <button 
-                       onClick={() => playAyahAudio(ayah.number, surahText.number, ayah.numberInSurah)} 
-                       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-sans font-medium transition-all shadow-sm ${playingAyah === ayah.number ? 'bg-red-500 text-white' : 'bg-amber-500 text-slate-950 hover:bg-amber-600'}`}
-                       title={playingAyah === ayah.number ? "إيقاف التلاوة" : "استماع للتلاوة"}
+                       onClick={() => setCurrentPageIndex(prev => Math.min(pages.length - 1, prev + 1))}
+                       disabled={currentPageIndex === pages.length - 1}
+                       className="p-2 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 hover:bg-amber-200 disabled:opacity-30 transition-colors shadow-sm"
                      >
-                       {playingAyah === ayah.number ? <><Square className="w-4 h-4 fill-current"/> إيقاف</> : <><Play className="w-4 h-4 fill-current"/> استماع</>}
+                       <ChevronRight className="w-6 h-6" />
+                     </button>
+                     <span className="font-mono text-sm text-gray-500 dark:text-gray-400">
+                        صفحة {currentPageIndex + 1} من {pages.length}
+                     </span>
+                     <button 
+                       onClick={() => setCurrentPageIndex(prev => Math.max(0, prev - 1))}
+                       disabled={currentPageIndex === 0}
+                       className="p-2 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 hover:bg-amber-200 disabled:opacity-30 transition-colors shadow-sm"
+                     >
+                       <ChevronLeft className="w-6 h-6" />
                      </button>
                    </div>
-
-                   {viewMode === 'tafsir' && (
-                     <div className="bg-gray-100/60 dark:bg-slate-900/60 p-4 rounded-xl border border-gray-200/50 dark:border-slate-700/50 mt-4 backdrop-blur-md">
-                       <div className="flex justify-between items-center mb-3">
-                         <span className="text-sm font-bold text-amber-700 dark:text-amber-400">التفسير الميسر</span>
-                         <div className="flex items-center gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                           <button 
-                             onClick={() => toggleTafsirAudio(surahTafsir.ayahs[idx].text, ayah.number)} 
-                             className={`flex items-center gap-1 text-xs px-2 py-1.5 rounded-lg font-sans transition-colors ${isTafsirPlaying === ayah.number ? 'bg-red-500 text-white' : 'bg-slate-500 text-white hover:bg-slate-600'}`}
-                             title="تشغيل / إيقاف التفسير الصوتي"
-                           >
-                             {isTafsirPlaying === ayah.number ? <Square className="w-3 h-3 fill-current"/> : <Volume2 className="w-3 h-3"/>}
-                             {isTafsirPlaying === ayah.number ? 'إيقاف' : 'صوت'}
-                           </button>
-                           <button onClick={() => copyToClipboard(surahTafsir.ayahs[idx].text)} className="p-1.5 bg-white/60 dark:bg-slate-700/60 rounded-lg hover:bg-white dark:hover:bg-slate-600 transition-colors border border-white/20" title="نسخ التفسير">
-                             <Copy className="w-4 h-4" />
-                           </button>
-                           <button onClick={() => saveTafsir(ayah.text, surahTafsir.ayahs[idx].text)} className="p-1.5 bg-white/60 dark:bg-slate-700/60 rounded-lg hover:bg-white dark:hover:bg-slate-600 transition-colors border border-white/20" title="حفظ التفسير">
-                             <BookmarkPlus className="w-4 h-4" />
-                           </button>
-                         </div>
-                       </div>
-                       <p className="text-base text-gray-800 dark:text-gray-200 leading-relaxed font-sans mt-2">
-                         {surahTafsir.ayahs[idx].text}
+                 </>
+               ) : (
+                 <div className="space-y-8">
+                   {surahText.ayahs.map((ayah, idx) => (
+                     <div key={ayah.numberInSurah} className="group relative break-words border-b border-gray-100/30 dark:border-slate-800/50 pb-6 mb-6 last:border-0 hover:bg-white/30 dark:hover:bg-black/20 p-4 rounded-2xl transition-all border border-transparent hover:border-white/20 backdrop-blur-sm">
+                       
+                       <p className={`mb-4 text-2xl leading-loose transition-colors ${playingAyah === ayah.number ? 'text-amber-600 dark:text-amber-400 font-bold' : ''}`}>
+                         {ayah.text} <span className="inline-flex items-center justify-center w-8 h-8 rounded-full border-2 border-amber-500/50 text-xs font-mono text-amber-600 dark:text-amber-400 mx-1 bg-amber-500/10 shadow-inner">{ayah.numberInSurah}</span>
                        </p>
+
+                       <div className="flex gap-2 justify-end mb-2 opacity-50 group-hover:opacity-100 transition-opacity">
+                         <button 
+                           onClick={() => playAyahAudio(ayah.number, surahText.number, ayah.numberInSurah)} 
+                           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-sans font-medium transition-all shadow-sm ${playingAyah === ayah.number ? 'bg-red-500 text-white' : 'bg-amber-500 text-slate-950 hover:bg-amber-600'}`}
+                           title={playingAyah === ayah.number ? "إيقاف التلاوة" : "استماع للتلاوة"}
+                         >
+                           {playingAyah === ayah.number ? <><Square className="w-4 h-4 fill-current"/> إيقاف</> : <><Play className="w-4 h-4 fill-current"/> استماع</>}
+                         </button>
+                       </div>
+
+                       {viewMode === 'tafsir' && (
+                         <div className="bg-gray-100/60 dark:bg-slate-900/60 p-4 rounded-xl border border-gray-200/50 dark:border-slate-700/50 mt-4 backdrop-blur-md">
+                           <div className="flex justify-between items-center mb-3">
+                             <span className="text-sm font-bold text-amber-700 dark:text-amber-400">التفسير الميسر</span>
+                             <div className="flex items-center gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                               <button 
+                                 onClick={() => toggleTafsirAudio(surahTafsir.ayahs[idx].text, ayah.number)} 
+                                 className={`flex items-center gap-1 text-xs px-2 py-1.5 rounded-lg font-sans transition-colors ${isTafsirPlaying === ayah.number ? 'bg-red-500 text-white' : 'bg-slate-500 text-white hover:bg-slate-600'}`}
+                                 title="تشغيل / إيقاف التفسير الصوتي"
+                               >
+                                 {isTafsirPlaying === ayah.number ? <Square className="w-3 h-3 fill-current"/> : <Volume2 className="w-3 h-3"/>}
+                                 {isTafsirPlaying === ayah.number ? 'إيقاف' : 'صوت'}
+                               </button>
+                               <button onClick={() => copyToClipboard(surahTafsir.ayahs[idx].text)} className="p-1.5 bg-white/60 dark:bg-slate-700/60 rounded-lg hover:bg-white dark:hover:bg-slate-600 transition-colors border border-white/20" title="نسخ التفسير">
+                                 <Copy className="w-4 h-4" />
+                               </button>
+                               <button onClick={() => saveTafsir(ayah.text, surahTafsir.ayahs[idx].text)} className="p-1.5 bg-white/60 dark:bg-slate-700/60 rounded-lg hover:bg-white dark:hover:bg-slate-600 transition-colors border border-white/20" title="حفظ التفسير">
+                                 <BookmarkPlus className="w-4 h-4" />
+                               </button>
+                             </div>
+                           </div>
+                           <p className="text-base text-gray-800 dark:text-gray-200 leading-relaxed font-sans mt-2">
+                             {surahTafsir.ayahs[idx].text}
+                           </p>
+                         </div>
+                       )}
+                       
                      </div>
-                   )}
-                   
+                   ))}
                  </div>
-               ))}
+               )}
             </div>
           </>
         ) : null}

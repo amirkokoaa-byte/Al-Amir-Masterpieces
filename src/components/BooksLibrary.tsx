@@ -15,37 +15,48 @@ export function BooksLibrary() {
       title: 'صحيح مسلم', 
       author: 'الإمام مسلم', 
       desc: 'المسند الصحيح المختصر بنقل العدل عن العدل إلى رسول الله صلى الله عليه وسلم', 
-      url: 'https://archive.org/download/waq17228/17228.pdf' 
+      url: 'https://archive.org/download/FP35198/35198.pdf' 
     },
     { 
       id: 3, 
       title: 'تفسير ابن كثير', 
       author: 'ابن كثير', 
       desc: 'تفسير القرآن العظيم', 
-      url: 'https://archive.org/download/waq14652/14652.pdf' 
+      url: 'https://archive.org/download/TafseerIbnKatheer_201804/Tafseer_Ibn_Katheer.pdf' 
     },
     { 
       id: 4, 
       title: 'تفسير الطبري', 
       author: 'محمد بن جرير الطبري', 
       desc: 'جامع البيان عن تأويل آي القرآن', 
-      url: 'https://archive.org/download/waq34674/34674.pdf' 
+      url: 'https://archive.org/download/TafsirAlTabari_201811/Tafsir_Al_Tabari.pdf' 
     },
     { 
       id: 5, 
       title: 'رياض الصالحين', 
       author: 'الإمام النووي', 
       desc: 'كتاب رياض الصالحين من كلام سيد المرسلين', 
-      url: 'https://archive.org/download/waq17849/17849.pdf' 
+      url: 'https://archive.org/download/Riyad_Al_Salihin_Arabic/Riyad_Al_Salihin.pdf' 
     },
     { 
       id: 6, 
       title: 'الرحيق المختوم', 
       author: 'صفي الرحمن المباركفوري', 
       desc: 'بحث في السيرة النبوية على صاحبها أفضل الصلاة والسلام', 
-      url: 'https://archive.org/download/waq18635/18635.pdf' 
+      url: 'https://archive.org/download/Ar-raheeqAl-makhtoomtheSealedNectar/Ar-Raheeq-AlMakhtum.pdf' 
     },
   ];
+
+  const [booksState, setBooksState] = React.useState(books);
+
+  React.useEffect(() => {
+    const saved = localStorage.getItem('islamic_books');
+    if (saved) {
+      try {
+        setBooksState(JSON.parse(saved));
+      } catch(e) {}
+    }
+  }, []);
 
   return (
     <div className="w-full max-w-6xl mx-auto space-y-6">
@@ -57,7 +68,7 @@ export function BooksLibrary() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {books.map(book => (
+        {booksState.map(book => (
           <div key={book.id} className="glass-panel p-6 glow-hover flex flex-col h-full">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-12 h-12 rounded-xl bg-amber-500/20 flex items-center justify-center text-amber-600 border border-amber-500/30">

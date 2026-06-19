@@ -15,11 +15,13 @@ import { BooksLibrary } from './components/BooksLibrary';
 import { PrayerGuide } from './components/PrayerGuide';
 import { PropheticHerbs } from './components/PropheticHerbs';
 import { IslamicShorts } from './components/IslamicShorts';
+import { ManageSettings } from './components/ManageSettings';
 import { useAzkarAlerts } from './hooks/useAzkar';
 
 function MainLayout() {
   const [activeTab, setActiveTab] = useState<'all' | 'reciters' | 'quran_read' | 'quran_tafsir' | 'prayers' | 'favorites' | 'alerts' | 'books' | 'prayer_guide' | 'herbs' | 'shorts'>('all');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const { favorites } = useFavoritesContext();
   
   // Call it here to keep interval running when app mounts
@@ -27,7 +29,7 @@ function MainLayout() {
 
   return (
     <div className="min-h-screen pb-32">
-      <Header onOpenMenu={() => setIsSidebarOpen(true)} />
+      <Header onOpenMenu={() => setIsSidebarOpen(true)} onOpenSettings={() => setIsSettingsOpen(true)} />
       
       <main className="max-w-7xl mx-auto px-4 py-8 relative">
         {/* Background decorative glowing orbs (Grey/Blue tone for Windows 10) */}
@@ -74,7 +76,8 @@ function MainLayout() {
          مع تحيات المطور Amir Lamay
       </div>
 
-      <AudioPlayer />
+      <AudioPlayer isSidebarOpen={isSidebarOpen} />
+      <ManageSettings isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
     </div>
   );
 }

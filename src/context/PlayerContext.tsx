@@ -16,6 +16,7 @@ interface PlayerContextType {
   setQuality: (q: 'high' | 'low') => void;
   startSleepTimer: (hours: number, minutes: number) => void;
   cancelSleepTimer: () => void;
+  stopStation: () => void;
   audioRef: React.RefObject<HTMLAudioElement | null>;
 }
 
@@ -87,6 +88,14 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         setIsPlaying(false);
       });
     }
+  };
+
+  const stopStation = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
+    setIsPlaying(false);
+    setCurrentStation(null);
   };
 
   const handleVolumeChange = (v: number) => {
@@ -184,6 +193,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         setQuality: handleQualityChange,
         startSleepTimer,
         cancelSleepTimer,
+        stopStation,
         audioRef
       }}
     >

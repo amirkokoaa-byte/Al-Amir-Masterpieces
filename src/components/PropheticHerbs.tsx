@@ -19,6 +19,17 @@ export function PropheticHerbs() {
     }
   ];
 
+  const [booksState, setBooksState] = React.useState(books);
+
+  React.useEffect(() => {
+    const saved = localStorage.getItem('prophetic_herbs_books');
+    if (saved) {
+      try {
+        setBooksState(JSON.parse(saved));
+      } catch(e) {}
+    }
+  }, []);
+
   const herbs = [
     {
       id: 1,
@@ -260,7 +271,7 @@ export function PropheticHerbs() {
           <Book className="text-blue-500 w-5 h-5" /> كتب مقترحة في الطب النبوي (PDF)
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {books.map(book => (
+          {booksState.map(book => (
             <div key={book.id} className="glass-panel p-6 glow-hover flex flex-col h-full border border-gray-100/50 dark:border-slate-700/50">
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center text-blue-600 border border-blue-500/30">
