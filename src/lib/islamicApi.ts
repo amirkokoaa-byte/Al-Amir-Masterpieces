@@ -1,9 +1,8 @@
 import { Surah, SurahDetail, PrayerInfo } from '../types/islamic';
+import surahsData from './surahs.json';
 
 export async function getSurahs(): Promise<Surah[]> {
-  const res = await fetch('https://api.alquran.cloud/v1/surah');
-  const data = await res.json();
-  return data.data;
+  return surahsData as Surah[];
 }
 
 export async function getSurahText(surahNumber: number): Promise<SurahDetail> {

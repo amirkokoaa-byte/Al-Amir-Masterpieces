@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Play, Share2, User } from 'lucide-react';
+import { db } from '../lib/firebase';
+import { doc, onSnapshot } from 'firebase/firestore';
 
 const SHORTS_DATA = [
   {
@@ -98,12 +100,12 @@ export function IslamicShorts() {
   const [shorts, setShorts] = useState<typeof SHORTS_DATA>(SHORTS_DATA);
 
   useEffect(() => {
-    const saved = localStorage.getItem('islamic_shorts');
-    if (saved) {
-      try {
-        setShorts(JSON.parse(saved));
-      } catch(e) {}
-    }
+    const unsub = onSnapshot(doc(db, 'settings', 'global'), (doc) => {
+      if (doc.exists() && doc.data().islamic_shorts && doc.data().islamic_shorts.length > 0) {
+        setShorts(doc.data().islamic_shorts);
+      }
+    });
+    return () => unsub();
   }, []);
 
   return (

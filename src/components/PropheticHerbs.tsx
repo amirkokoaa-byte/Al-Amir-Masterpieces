@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Leaf, Info, Book, Download } from 'lucide-react';
+import { db } from '../lib/firebase';
+import { doc, onSnapshot } from 'firebase/firestore';
 
 export function PropheticHerbs() {
-  const books = [
+  const defaultBooks = [
     {
       id: 1,
       title: "الطب النبوي",
@@ -19,15 +21,15 @@ export function PropheticHerbs() {
     }
   ];
 
-  const [booksState, setBooksState] = React.useState(books);
+  const [booksState, setBooksState] = useState(defaultBooks);
 
-  React.useEffect(() => {
-    const saved = localStorage.getItem('prophetic_herbs_books');
-    if (saved) {
-      try {
-        setBooksState(JSON.parse(saved));
-      } catch(e) {}
-    }
+  useEffect(() => {
+    const unsub = onSnapshot(doc(db, 'settings', 'global'), (docSnap) => {
+      if (docSnap.exists() && docSnap.data().prophetic_herbs_books) {
+        setBooksState(docSnap.data().prophetic_herbs_books);
+      }
+    });
+    return () => unsub();
   }, []);
 
   const herbs = [

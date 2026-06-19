@@ -53,13 +53,23 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   // Handle station change explicit play
   useEffect(() => {
     if (currentStation && audioRef.current) {
+      const src = currentStation.url_resolved || currentStation.url;
+      if (audioRef.current.src !== src) {
+        audioRef.current.src = src;
+        audioRef.current.load();
+      }
       setIsBuffering(true);
-      audioRef.current.play().catch(e => {
-        console.error("Play error on station change:", e);
-        setIsPlaying(false);
-        setIsBuffering(false);
-        alert("عذراً، هذا البث لا يعمل حالياً. قد يكون متوقفاً أو غير متوافق.");
-      });
+      const playPromise = audioRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(e => {
+          if (e.name !== 'AbortError') {
+            console.error("Play error on station change:", e);
+            setIsPlaying(false);
+            setIsBuffering(false);
+            alert("عذراً، هذا البث لا يعمل حالياً. قد يكون متوقفاً أو غير متوافق.");
+          }
+        });
+      }
     }
   }, [currentStation]);
 
@@ -79,20 +89,32 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       audioRef.current.pause();
       setIsPlaying(false);
     } else {
+      const src = currentStation.url_resolved || currentStation.url;
+      if (audioRef.current.src !== src) {
+        audioRef.current.src = src;
+        audioRef.current.load();
+      }
       setIsBuffering(true);
-      audioRef.current.play().then(() => {
-        setIsPlaying(true);
-      }).catch(e => {
-        console.error("Play error:", e);
-        setIsBuffering(false);
-        setIsPlaying(false);
-      });
+      const playPromise = audioRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise.then(() => {
+          setIsPlaying(true);
+        }).catch(e => {
+          if (e.name !== 'AbortError') {
+            console.error("Play error:", e);
+            setIsBuffering(false);
+            setIsPlaying(false);
+          }
+        });
+      }
     }
   };
 
   const stopStation = () => {
     if (audioRef.current) {
       audioRef.current.pause();
+      audioRef.current.removeAttribute('src');
+      audioRef.current.load();
     }
     setIsPlaying(false);
     setCurrentStation(null);
@@ -200,7 +222,6 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       {children}
       <audio 
         ref={audioRef} 
-        src={currentStation ? currentStation.url_resolved : undefined} 
       />
     </PlayerContext.Provider>
   );

@@ -1,39 +1,72 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Lock, Save, Plus, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { db } from '../lib/firebase';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 export function ManageSettings({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const [password, setPassword] = useState('');
   const [authenticated, setAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   // States to hold modifications
-  const [books, setBooks] = useState<any[]>(() => {
-    try { 
-      const b = JSON.parse(localStorage.getItem('islamic_books') || '[]'); 
-      if (b.length > 0) return b;
-    } catch {}
-    return [
-      { id: 1, title: 'صحيح البخاري', author: 'الإمام البخاري', desc: 'الجامع المسند الصحيح المختصر', url: 'https://archive.org/download/waq10447/10447.pdf' },
-      { id: 2, title: 'صحيح مسلم', author: 'الإمام مسلم', desc: 'المسند الصحيح المختصر', url: 'https://archive.org/download/FP35198/35198.pdf' },
-      { id: 3, title: 'تفسير ابن كثير', author: 'ابن كثير', desc: 'تفسير القرآن العظيم', url: 'https://archive.org/download/TafseerIbnKatheer_201804/Tafseer_Ibn_Katheer.pdf' },
-      { id: 4, title: 'تفسير الطبري', author: 'محمد بن جرير الطبري', desc: 'جامع البيان عن تأويل آي القرآن', url: 'https://archive.org/download/TafsirAlTabari_201811/Tafsir_Al_Tabari.pdf' },
-      { id: 5, title: 'رياض الصالحين', author: 'الإمام النووي', desc: 'كتاب رياض الصالحين من كلام سيد المرسلين', url: 'https://archive.org/download/Riyad_Al_Salihin_Arabic/Riyad_Al_Salihin.pdf' },
-      { id: 6, title: 'الرحيق المختوم', author: 'صفي الرحمن المباركفوري', desc: 'بحث في السيرة النبوية', url: 'https://archive.org/download/Ar-raheeqAl-makhtoomtheSealedNectar/Ar-Raheeq-AlMakhtum.pdf' }
-    ];
-  });
-  const [herbs, setHerbs] = useState<any[]>(() => {
-    try { 
-      const h = JSON.parse(localStorage.getItem('prophetic_herbs_books') || '[]'); 
-      if (h.length > 0) return h;
-    } catch {}
-    return [
-      { id: 1, title: "الطب النبوي", author: "ابن قيم الجوزية", desc: "المرجع الأكبر والأشهر الذي يحتوي على تفصيل الأعشاب", url: "https://archive.org/download/tby01/tby01.pdf" },
-      { id: 2, title: "موسوعة الإعجاز العلمي في الطب النبوي", author: "د. عبد الباسط محمد السيد", desc: "موسوعة شاملة للوائح الطبية النبوية والأعشاب الطبيعية", url: "https://archive.org/download/ieamtneamtndams/eamtndams.pdf" }
-    ];
-  });
-  const [shorts, setShorts] = useState<any[]>(() => {
-    try { return JSON.parse(localStorage.getItem('islamic_shorts') || '[]'); } catch { return []; }
-  });
+  const [books, setBooks] = useState<any[]>([]);
+  const [herbs, setHerbs] = useState<any[]>([]);
+  const [shorts, setShorts] = useState<any[]>([]);
+  const [surahReciters, setSurahReciters] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (authenticated) {
+      const load = async () => {
+        setIsLoading(true);
+        try {
+          const docSnap = await getDoc(doc(db, 'settings', 'global'));
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            setBooks(data.islamic_books || []);
+            setHerbs(data.prophetic_herbs_books || []);
+            setShorts(data.islamic_shorts || []);
+            
+            // Set default reciters if empty
+            const savedReciters = data.surah_reciters || [];
+            if (savedReciters.length > 0) {
+              setSurahReciters(savedReciters);
+            } else {
+              setSurahReciters([
+                { id: 1, name: "أحمد بن علي العجمي", server_url: "https://server10.mp3quran.net/ajm" },
+                { id: 2, name: "مشاري العفاسي", server_url: "https://server8.mp3quran.net/afs" },
+                { id: 3, name: "عبد الباسط عبد الصمد", server_url: "https://server7.mp3quran.net/basit" },
+                { id: 4, name: "ماهر المعيقلي", server_url: "https://server12.mp3quran.net/maher" },
+                { id: 5, name: "سعود الشريم", server_url: "https://server7.mp3quran.net/shur" },
+                { id: 6, name: "عبد الرحمن السديس", server_url: "https://server11.mp3quran.net/sds" },
+                { id: 7, name: "سعد الغامدي", server_url: "https://server7.mp3quran.net/s_gmd" },
+                { id: 8, name: "ياسر الدوسري", server_url: "https://server11.mp3quran.net/yasser" },
+                { id: 9, name: "إسلام صبحي", server_url: "https://server14.mp3quran.net/islam/Rewayat-Hafs-A-n-Assem" },
+                { id: 10, name: "إسلام صابر", server_url: "https://server8.mp3quran.net/saber" }
+              ]);
+            }
+          } else {
+              setSurahReciters([
+                { id: 1, name: "أحمد بن علي العجمي", server_url: "https://server10.mp3quran.net/ajm" },
+                { id: 2, name: "مشاري العفاسي", server_url: "https://server8.mp3quran.net/afs" },
+                { id: 3, name: "عبد الباسط عبد الصمد", server_url: "https://server7.mp3quran.net/basit" },
+                { id: 4, name: "ماهر المعيقلي", server_url: "https://server12.mp3quran.net/maher" },
+                { id: 5, name: "سعود الشريم", server_url: "https://server7.mp3quran.net/shur" },
+                { id: 6, name: "عبد الرحمن السديس", server_url: "https://server11.mp3quran.net/sds" },
+                { id: 7, name: "سعد الغامدي", server_url: "https://server7.mp3quran.net/s_gmd" },
+                { id: 8, name: "ياسر الدوسري", server_url: "https://server11.mp3quran.net/yasser" },
+                { id: 9, name: "إسلام صبحي", server_url: "https://server14.mp3quran.net/islam/Rewayat-Hafs-A-n-Assem" },
+                { id: 10, name: "إسلام صابر", server_url: "https://server8.mp3quran.net/saber" }
+              ]);
+          }
+        } catch (e) {
+          console.error("Error loading settings", e);
+        }
+        setIsLoading(false);
+      }
+      load();
+    }
+  }, [authenticated]);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,14 +77,23 @@ export function ManageSettings({ isOpen, onClose }: { isOpen: boolean; onClose: 
     }
   };
 
-  const saveToStorage = () => {
-    if (books.length > 0) localStorage.setItem('islamic_books', JSON.stringify(books));
-    if (herbs.length > 0) localStorage.setItem('prophetic_herbs_books', JSON.stringify(herbs));
-    if (shorts.length > 0) localStorage.setItem('islamic_shorts', JSON.stringify(shorts));
-    alert('تم الحفظ بنجاح لجميع المستخدمين!');
-    // Ideally we would sync down or trigger a re-render here, reload page for simplicity
-    window.location.reload();
+  const saveToFirebase = async () => {
+    setIsLoading(true);
+    try {
+      await setDoc(doc(db, 'settings', 'global'), {
+        islamic_books: books,
+        prophetic_herbs_books: herbs,
+        islamic_shorts: shorts,
+        surah_reciters: surahReciters
+      });
+      alert('تم الحفظ بنجاح لجميع المستخدمين لحظياً!');
+    } catch (e) {
+      console.error(e);
+      alert('حدث خطأ أثناء الحفظ');
+    }
+    setIsLoading(false);
   };
+
 
   if (!isOpen) return null;
 
@@ -89,6 +131,25 @@ export function ManageSettings({ isOpen, onClose }: { isOpen: boolean; onClose: 
             </form>
           ) : (
             <div className="space-y-10">
+              {/* Surah Reciters Section */}
+              <section>
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-xl font-bold text-amber-600">قراء سور القرآن الكريم (صوتيات mp3)</h3>
+                  <button onClick={() => setSurahReciters([{id: Date.now(), name: 'اسم القارئ', server_url: ''}, ...surahReciters])} className="flex items-center gap-1 text-sm bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-3 py-1.5 rounded-lg">
+                    <Plus className="w-4 h-4"/> إضافة
+                  </button>
+                </div>
+                <div className="space-y-4">
+                  {surahReciters.map((item, idx) => (
+                    <div key={item.id} className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border border-gray-200 dark:border-slate-700 rounded-xl">
+                      <input className="bg-gray-50 dark:bg-slate-800 p-2 rounded" placeholder="اسم القارئ" value={item.name} onChange={e => { const n = [...surahReciters]; n[idx].name = e.target.value; setSurahReciters(n); }} />
+                      <input className="bg-gray-50 dark:bg-slate-800 p-2 rounded" dir="ltr" placeholder="رابط السيرفر (ينتهي بـ /)" value={item.server_url} onChange={e => { const n = [...surahReciters]; n[idx].server_url = e.target.value; setSurahReciters(n); }} />
+                      <button onClick={() => setSurahReciters(surahReciters.filter(s => s.id !== item.id))} className="text-red-500 justify-self-start col-span-1 md:col-span-2"><Trash2 className="w-5 h-5"/></button>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
               {/* Short / Reels Section */}
               <section>
                 <div className="flex justify-between items-center mb-4">
@@ -156,8 +217,9 @@ export function ManageSettings({ isOpen, onClose }: { isOpen: boolean; onClose: 
         </div>
 
         {authenticated && (
-           <div className="p-4 border-t border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-800/80 rounded-b-2xl flex justify-end">
-             <button onClick={saveToStorage} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl transition-transform hover:scale-105">
+           <div className="p-4 border-t border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-800/80 rounded-b-2xl flex justify-end gap-4 items-center">
+             {isLoading && <span className="text-gray-500">جاري التحميل...</span>}
+             <button disabled={isLoading} onClick={saveToFirebase} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl transition-transform hover:scale-105 disabled:opacity-50">
                <Save className="w-5 h-5" /> حفظ ونشر التعديلات
              </button>
            </div>

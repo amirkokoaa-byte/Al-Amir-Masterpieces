@@ -69,9 +69,9 @@ export async function getQuranRecitersRadios(): Promise<Station[]> {
 export const DEFAULT_STATIONS: Station[] = [
   {
     stationuuid: 'ertu-quran-egypt',
-    name: 'إذاعة القرآن الكريم من القاهرة',
-    url: 'https://stream.radiojar.com/8s5u5tpdtwzuv',
-    url_resolved: 'https://stream.radiojar.com/8s5u5tpdtwzuv',
+    name: 'إذاعة عبدالباسط عبدالصمد',
+    url: 'https://backup.qurango.net/radio/abdulbasit_abdulsamad_mojawwad',
+    url_resolved: 'https://backup.qurango.net/radio/abdulbasit_abdulsamad_mojawwad',
     tags: 'quran,islamic,egypt',
     country: 'Egypt',
     language: 'arabic',
@@ -79,10 +79,10 @@ export const DEFAULT_STATIONS: Station[] = [
     bitrate: 128
   },
   {
-    stationuuid: 'default-1',
+    stationuuid: 'quran-saudi',
     name: 'إذاعة القرآن الكريم (السعودية)',
-    url: 'https://quransrv.quran-makkah.com/quran',
-    url_resolved: 'https://quransrv.quran-makkah.com/quran',
+    url: 'https://stream.radiojar.com/0tpy1h0kxtzuv',
+    url_resolved: 'https://stream.radiojar.com/0tpy1h0kxtzuv',
     tags: 'quran,islamic',
     country: 'Saudi Arabia',
     language: 'arabic',
@@ -90,12 +90,12 @@ export const DEFAULT_STATIONS: Station[] = [
     bitrate: 128
   },
   {
-    stationuuid: 'mp3quran-alfasy',
-    name: 'تلاوات - مشاري العفاسي',
-    url: 'https://backup.qurango.net/radio/mishary_alafasi',
-    url_resolved: 'https://backup.qurango.net/radio/mishary_alafasi',
+    stationuuid: 'mp3quran-mix',
+    name: 'إذاعة تلاوات متنوعة لكبار القراء',
+    url: 'https://backup.qurango.net/radio/mix',
+    url_resolved: 'https://backup.qurango.net/radio/mix',
     tags: 'quran',
-    country: 'Kuwait',
+    country: 'Saudi Arabia',
     language: 'arabic',
     favicon: '',
     bitrate: 128

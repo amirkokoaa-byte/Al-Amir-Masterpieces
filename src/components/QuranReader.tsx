@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { getSurahs, getSurahText, getSurahTafsir } from '../lib/islamicApi';
 import { Surah, SurahDetail, Ayah } from '../types/islamic';
-import { BookOpen, Copy, BookmarkPlus, Loader2, Play, Square, Volume2, ChevronRight, ChevronLeft } from 'lucide-react';
+import { BookOpen, Copy, BookmarkPlus, Loader2, Play, Square, Volume2, ChevronRight, ChevronLeft, Headphones, Download } from 'lucide-react';
+import { db } from '../lib/firebase';
+import { doc, onSnapshot } from 'firebase/firestore';
 
-const RECITERS = [
+const DEFAULT_AYAH_RECITERS = [
   { id: 'ar.abdulbasitmurattal', name: 'عبد الباسط عبد الصمد' },
   { id: 'ar.abdurrahmaansudais', name: 'عبد الرحمن السديس' },
   { id: 'ar.alafasy', name: 'مشاري العفاسي' },
@@ -11,6 +13,19 @@ const RECITERS = [
   { id: 'ar.ahmedajamy', name: 'أحمد بن علي العجمي' },
   { id: 'ar.husary', name: 'محمود خليل الحصري' },
   { id: 'ar.hudhaify', name: 'علي الحذيفي' },
+];
+
+const DEFAULT_SURAH_RECITERS = [
+  { id: 1, name: "أحمد بن علي العجمي", server_url: "https://server10.mp3quran.net/ajm" },
+  { id: 2, name: "مشاري العفاسي", server_url: "https://server8.mp3quran.net/afs" },
+  { id: 3, name: "عبد الباسط عبد الصمد", server_url: "https://server7.mp3quran.net/basit" },
+  { id: 4, name: "ماهر المعيقلي", server_url: "https://server12.mp3quran.net/maher" },
+  { id: 5, name: "سعود الشريم", server_url: "https://server7.mp3quran.net/shur" },
+  { id: 6, name: "عبد الرحمن السديس", server_url: "https://server11.mp3quran.net/sds" },
+  { id: 7, name: "سعد الغامدي", server_url: "https://server7.mp3quran.net/s_gmd" },
+  { id: 8, name: "ياسر الدوسري", server_url: "https://server11.mp3quran.net/yasser" },
+  { id: 9, name: "إسلام صبحي", server_url: "https://server14.mp3quran.net/islam/Rewayat-Hafs-A-n-Assem" },
+  { id: 10, name: "إسلام صابر", server_url: "https://server8.mp3quran.net/saber" }
 ];
 
 export function QuranReader({ viewMode = 'read' }: { viewMode?: 'read' | 'tafsir' }) {
@@ -22,11 +37,64 @@ export function QuranReader({ viewMode = 'read' }: { viewMode?: 'read' | 'tafsir
   const [loadingViewer, setLoadingViewer] = useState(false);
   const [savedTafsirs, setSavedTafsirs] = useState<{ayahText: string, tafsir: string}[]>([]);
   
+  // Custom surah reciters list from config
+  const [surahReciters, setSurahReciters] = useState(DEFAULT_SURAH_RECITERS);
+  const [selectedFullSurahReciterUrl, setSelectedFullSurahReciterUrl] = useState(DEFAULT_SURAH_RECITERS[0].server_url);
+
+  // Auto-fetch from firebase
+  useEffect(() => {
+    const unsub = onSnapshot(doc(db, 'settings', 'global'), (docSnap) => {
+      if (docSnap.exists() && docSnap.data().surah_reciters && docSnap.data().surah_reciters.length > 0) {
+        setSurahReciters(docSnap.data().surah_reciters);
+        // Default to first if current URL not in list
+        setSelectedFullSurahReciterUrl(prev => {
+          const exists = docSnap.data().surah_reciters.some((r: any) => r.server_url === prev);
+          return exists ? prev : docSnap.data().surah_reciters[0].server_url;
+        });
+      }
+    });
+    return () => unsub();
+  }, []);
+  
   // Audio state
-  const [selectedReciter, setSelectedReciter] = useState(RECITERS[0].id);
+  const [selectedReciter, setSelectedReciter] = useState(DEFAULT_AYAH_RECITERS[0].id);
   const [playingAyah, setPlayingAyah] = useState<number | null>(null);
   const [isTafsirPlaying, setIsTafsirPlaying] = useState<number | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const [autoPlayQuran, setAutoPlayQuran] = useState(true);
+  const [downloading, setDownloading] = useState(false);
+  const [isDownloaded, setIsDownloaded] = useState(false);
+
+  // Check if current surah is downloaded for offline
+  useEffect(() => {
+    if (surahText && selectedFullSurahReciterUrl) {
+      const url = `${selectedFullSurahReciterUrl}/${surahText.number.toString().padStart(3, '0')}.mp3`;
+      if ('caches' in window) {
+        caches.match(url).then(res => setIsDownloaded(!!res));
+      }
+    }
+  }, [surahText, selectedFullSurahReciterUrl]);
+
+  const downloadSurahAudio = async () => {
+    if (!surahText || !('caches' in window)) return;
+    setDownloading(true);
+    try {
+      const url = `${selectedFullSurahReciterUrl}/${surahText.number.toString().padStart(3, '0')}.mp3`;
+      const cache = await caches.open('islamic-audio-cache-v1');
+      const res = await fetch(url);
+      if (res.ok) {
+        await cache.put(url, res);
+        setIsDownloaded(true);
+        alert('تم حفظ السورة بنجاح، يمكنك الاستماع إليها الآن بدون إنترنت');
+      } else {
+        alert('فشل التحميل، يرجى المحاولة لاحقاً');
+      }
+    } catch (err) {
+      alert('حدث خطأ أثناء الاتصال بالشبكة للملف الصوتي');
+    }
+    setDownloading(false);
+  };
 
   // Quran Paging State
   const [currentPageIndex, setCurrentPageIndex] = useState(0);
@@ -220,10 +288,13 @@ export function QuranReader({ viewMode = 'read' }: { viewMode?: 'read' | 'tafsir
                     stopAudio();
                   }}
                   className="bg-white/50 dark:bg-slate-900/50 border border-amber-500/30 rounded-lg p-2 text-sm font-medium outline-none backdrop-blur-sm focus:border-amber-500 transition-colors"
+                  title="قارئ التلاوة (آية بآية)"
                 >
-                  {RECITERS.map(r => (
-                    <option key={r.id} value={r.id} className="bg-white dark:bg-slate-900">{r.name}</option>
-                  ))}
+                  <optgroup label="تلاوة بالتأشير (آية بآية)">
+                    {DEFAULT_AYAH_RECITERS.map(r => (
+                      <option key={r.id} value={r.id} className="bg-white dark:bg-slate-900">{r.name}</option>
+                    ))}
+                  </optgroup>
                 </select>
 
                 <button 
@@ -232,6 +303,58 @@ export function QuranReader({ viewMode = 'read' }: { viewMode?: 'read' | 'tafsir
                 >
                   <Copy className="w-4 h-4" /> نسخ
                 </button>
+              </div>
+            </div>
+
+            <div className="bg-amber-50 dark:bg-slate-800/60 rounded-xl p-4 mb-6 border border-amber-100 dark:border-slate-700 mt-2 flex flex-col items-start gap-4">
+              <div className="flex flex-col md:flex-row items-center gap-4 w-full">
+                <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400 font-bold w-full md:w-auto">
+                  <Headphones className="w-5 h-5" />
+                  <span>الاستماع للسورة كاملة:</span>
+                </div>
+                <select 
+                    value={selectedFullSurahReciterUrl} 
+                    onChange={(e) => setSelectedFullSurahReciterUrl(e.target.value)}
+                    className="w-full md:w-auto bg-white dark:bg-slate-900 border border-amber-500/30 rounded-lg p-2 text-sm outline-none focus:border-amber-500 flex-1 md:flex-none"
+                  >
+                    {surahReciters.map(r => (
+                      <option key={r.id} value={r.server_url}>{r.name}</option>
+                    ))}
+                </select>
+                <button
+                  disabled={downloading || isDownloaded}
+                  onClick={downloadSurahAudio}
+                  className="flex items-center gap-2 w-full md:w-auto text-sm px-3 py-2 rounded-lg transition-colors font-bold whitespace-nowrap disabled:opacity-75 disabled:cursor-not-allowed bg-green-600 hover:bg-green-700 text-white shadow-sm"
+                  title="حفظ الاستماع للسورة بدون إنترنت"
+                >
+                  <Download className={`w-4 h-4 ${downloading ? 'animate-bounce' : ''}`} />
+                  {downloading ? 'جاري الحفظ...' : isDownloaded ? 'متاحة بدون إنترنت' : 'حفظ (بدون إنترنت)'}
+                </button>
+              </div>
+              <div className="w-full">
+                <audio 
+                  className="w-full h-10" 
+                  controls 
+                  src={`${selectedFullSurahReciterUrl}/${surahText.number.toString().padStart(3, '0')}.mp3`}
+                  onPlay={() => { stopAudio(); stopTafsirAudio(); }}
+                  onEnded={() => {
+                    if (autoPlayQuran && surahText.number < 114) {
+                      loadSurah(surahText.number + 1);
+                    }
+                  }}
+                />
+              </div>
+              <div className="flex items-center gap-2 w-full pt-2 border-t border-amber-200/50 dark:border-slate-700/50 mt-1">
+                <input 
+                  type="checkbox" 
+                  id="autoPlayQ" 
+                  checked={autoPlayQuran} 
+                  onChange={e => setAutoPlayQuran(e.target.checked)} 
+                  className="w-4 h-4 accent-amber-600"
+                />
+                <label htmlFor="autoPlayQ" className="text-sm font-bold text-amber-700 dark:text-amber-400 cursor-pointer">
+                  القرآن كاملاً (تلقائي الانتقال للسورة التالية)
+                </label>
               </div>
             </div>
             
