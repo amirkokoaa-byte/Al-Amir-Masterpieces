@@ -1,0 +1,132 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", system-ui, sans-serif;
+  --animate-audio-bar-1: bounce 1s infinite alternate;
+  --animate-audio-bar-2: bounce 0.8s infinite alternate;
+  --animate-audio-bar-3: bounce 1.2s infinite alternate;
+
+  /* Windows 10 Grey Glassmorphism Override */
+  
+  /* Primary Base / Backgrounds */
+  --color-white: #ffffff;
+  
+  /* Slate used for general layout */
+  --color-slate-50: #f8fafc;  
+  --color-slate-100: #f1f5f9;
+  --color-slate-200: #e2e8f0;
+  --color-slate-300: #cbd5e1;
+  --color-slate-400: rgba(148, 163, 184, 0.5); 
+  --color-slate-500: #64748b;
+  --color-slate-700: #334155; 
+  --color-slate-800: #1e293b; 
+  --color-slate-900: #0f172a; 
+  --color-slate-950: #020617; 
+
+  /* Gray used for inputs/borders/text */
+  --color-gray-50: #f9fafb;
+  --color-gray-100: #f3f4f6; 
+  --color-gray-200: #e5e7eb; 
+  --color-gray-300: #d1d5db;
+  --color-gray-400: rgba(156, 163, 175, 0.4); 
+  --color-gray-500: #6b7280; 
+  --color-gray-600: #4b5563;
+  --color-gray-700: #374151; 
+  --color-gray-800: #1f2937;
+  --color-gray-900: #111827; 
+
+  /* Accent Color (subtle light blue/grey for Windows 10 feel) */
+  --color-amber-50: #f0f9ff;
+  --color-amber-100: #e0f2fe;
+  --color-amber-200: #bae6fd;
+  --color-amber-300: #7dd3fc;
+  --color-amber-400: #38bdf8;
+  --color-amber-500: #64748b; /* Main accent is slate-500 now */
+  --color-amber-600: #475569;
+  --color-amber-700: #334155;
+  --color-amber-800: #1e293b;
+  --color-amber-900: #0f172a;
+}
+
+@keyframes bounce {
+  0% { transform: scaleY(0.5); }
+  100% { transform: scaleY(1); }
+}
+
+/* Windows 10 Pulse/Flash animation on hover */
+@keyframes flashGlow {
+  0% { box-shadow: 0 0 5px rgba(255,255,255,0.1); }
+  50% { box-shadow: 0 0 25px rgba(255,255,255,0.8); background-color: rgba(255,255,255,0.4); }
+  100% { box-shadow: 0 0 15px rgba(255,255,255,0.4); }
+}
+
+@layer base {
+  html {
+    direction: rtl;
+    scroll-behavior: smooth;
+  }
+  
+  body {
+    /* Desktop background */
+    @apply bg-gray-100 text-gray-900 transition-colors duration-300 relative;
+    background-image: linear-gradient(135deg, #e5e7eb 0%, #cbd5e1 100%);
+    background-attachment: fixed;
+  }
+  
+  .dark body {
+    @apply bg-gray-900 text-gray-100;
+    background-image: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+    background-attachment: fixed;
+  }
+}
+
+/* Glassmorphism & Hover Glow */
+.glass-panel {
+  @apply bg-white/20 dark:bg-black/40 backdrop-blur-2xl border border-white/60 dark:border-white/10 shadow-lg rounded-xl relative overflow-hidden transition-all duration-300;
+}
+
+.glow-hover {
+  @apply transition-all duration-300;
+}
+.glow-hover:hover {
+  @apply bg-white/40 dark:bg-white/10 border-white/80 dark:border-white/30 z-10;
+  animation: flashGlow 1s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
+}
+
+button {
+  @apply transition-all duration-300;
+}
+
+button:hover {
+  @apply shadow-[0_0_15px_rgba(255,255,255,0.6)] dark:shadow-[0_0_15px_rgba(255,255,255,0.2)];
+}
+
+/* Custom Scrollbar for inner elements */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  @apply bg-amber-500/50 rounded-full;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  @apply bg-amber-500/80;
+}
+
+/* Hide scrollbar completely but allow scrolling */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+/* Utilities to handle ranges in RTL */
+.rtl-flip {
+  direction: ltr;
+}
+
