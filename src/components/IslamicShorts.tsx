@@ -104,6 +104,8 @@ export function IslamicShorts() {
       if (doc.exists() && doc.data().islamic_shorts && doc.data().islamic_shorts.length > 0) {
         setShorts(doc.data().islamic_shorts);
       }
+    }, (err) => {
+      // Ignore offline errors silently
     });
     return () => unsub();
   }, []);

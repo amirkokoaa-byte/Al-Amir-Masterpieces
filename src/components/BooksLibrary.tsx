@@ -20,6 +20,8 @@ export function BooksLibrary() {
       if (doc.exists() && doc.data().islamic_books) {
         setBooksState(doc.data().islamic_books);
       }
+    }, (err) => {
+      // Ignore offline errors silently
     });
     return () => unsub();
   }, []);

@@ -53,11 +53,17 @@
   100% { transform: scaleY(1); }
 }
 
-/* Windows 10 Pulse/Flash animation on hover */
-@keyframes flashGlow {
-  0% { box-shadow: 0 0 5px rgba(255,255,255,0.1); }
-  50% { box-shadow: 0 0 25px rgba(255,255,255,0.8); background-color: rgba(255,255,255,0.4); }
-  100% { box-shadow: 0 0 15px rgba(255,255,255,0.4); }
+/* Section border flash animation on hover */
+@keyframes borderFlashWhite {
+  0% { box-shadow: 0 0 0 rgba(255,255,255,0); border-color: rgba(255,255,255,0.1); }
+  30% { box-shadow: 0 0 15px rgba(255,255,255,1); border-color: rgba(255,255,255,1); }
+  100% { box-shadow: 0 0 8px rgba(255,255,255,0.5); border-color: rgba(255,255,255,0.5); }
+}
+
+@keyframes borderFlashDark {
+  0% { box-shadow: 0 0 5px rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.1); }
+  50% { box-shadow: 0 0 20px rgba(255,255,255,0.4); border-color: rgba(255,255,255,0.5); }
+  100% { box-shadow: 0 0 10px rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.3); }
 }
 
 @layer base {
@@ -67,16 +73,25 @@
   }
   
   body {
-    /* Desktop background */
-    @apply bg-gray-100 text-gray-900 transition-colors duration-300 relative;
+    /* Auto Desktop Background */
+    @apply bg-gray-100 text-gray-900 transition-colors duration-300 relative min-h-screen;
     background-image: linear-gradient(135deg, #e5e7eb 0%, #cbd5e1 100%);
     background-attachment: fixed;
   }
   
   .dark body {
-    @apply bg-gray-900 text-gray-100;
-    background-image: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+    /* Gray and Navy Blue Theme */
+    @apply bg-slate-900 text-gray-100;
+    background-image: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
     background-attachment: fixed;
+  }
+
+  select, option {
+    @apply bg-white text-gray-900;
+  }
+  
+  .dark select, .dark option {
+    @apply !bg-gray-700 !text-white;
   }
 }
 
@@ -89,8 +104,12 @@
   @apply transition-all duration-300;
 }
 .glow-hover:hover {
-  @apply bg-white/40 dark:bg-white/10 border-white/80 dark:border-white/30 z-10;
-  animation: flashGlow 1s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
+  @apply z-10;
+  animation: borderFlashWhite 0.6s ease-out forwards;
+}
+.dark .glow-hover:hover {
+  @apply z-10;
+  animation: borderFlashDark 0.6s ease-out forwards;
 }
 
 button {

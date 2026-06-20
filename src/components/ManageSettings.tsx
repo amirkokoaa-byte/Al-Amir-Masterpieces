@@ -59,8 +59,10 @@ export function ManageSettings({ isOpen, onClose }: { isOpen: boolean; onClose: 
                 { id: 10, name: "إسلام صابر", server_url: "https://server8.mp3quran.net/saber" }
               ]);
           }
-        } catch (e) {
-          console.error("Error loading settings", e);
+        } catch (e: any) {
+          if (e?.code !== 'unavailable') {
+            console.error("Error loading settings", e);
+          }
         }
         setIsLoading(false);
       }

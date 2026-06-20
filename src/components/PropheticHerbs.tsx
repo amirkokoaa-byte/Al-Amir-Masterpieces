@@ -28,6 +28,8 @@ export function PropheticHerbs() {
       if (docSnap.exists() && docSnap.data().prophetic_herbs_books) {
         setBooksState(docSnap.data().prophetic_herbs_books);
       }
+    }, (err) => {
+      // Ignore offline errors silently
     });
     return () => unsub();
   }, []);
