@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useRef, useEffect, ReactNode } from 'react';
+import Hls from 'hls.js';
 import { Station } from '../types';
 
 interface PlayerContextType {
@@ -32,10 +33,12 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [sleepTimerActive, setSleepTimerActive] = useState(false);
   const [sleepTimerHours, setSleepTimerHours] = useState(0);
   const [sleepTimerMinutes, setSleepTimerMinutes] = useState(0);
+  const [isFallback, setIsFallback] = useState(false);
   
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const hlsRef = useRef<Hls | null>(null);
 
   useEffect(() => {
     const savedVol = localStorage.getItem('radio_volume');
@@ -53,22 +56,59 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   // Handle station change explicit play
   useEffect(() => {
     if (currentStation && audioRef.current) {
-      const src = currentStation.url_resolved || currentStation.url;
-      if (audioRef.current.src !== src) {
-        audioRef.current.src = src;
-        audioRef.current.load();
+      setIsFallback(false);
+      let src = currentStation.url_resolved || currentStation.url;
+      const audio = audioRef.current;
+      
+      // Proxy radiojar or non-https streams to avoid Mixed Content / CORS / redirect issues
+      if (src.includes('radiojar.com') || src.startsWith('http://')) {
+        src = `/api/stream?url=${encodeURIComponent(src)}`;
       }
+      
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+      }
+      
       setIsBuffering(true);
-      const playPromise = audioRef.current.play();
-      if (playPromise !== undefined) {
-        playPromise.catch(e => {
-          if (e.name !== 'AbortError') {
-            console.error("Play error on station change:", e);
-            setIsPlaying(false);
+
+      const attemptPlay = () => {
+        const playPromise = audio.play();
+        if (playPromise !== undefined) {
+          playPromise.catch(e => {
+            if (e.name !== 'AbortError') {
+              console.error("Play error on station change:", e);
+              setIsPlaying(false);
+              setIsBuffering(false);
+              audio.dispatchEvent(new Event('error'));
+            }
+          });
+        }
+      };
+
+      if (src.includes('.m3u8') && Hls.isSupported()) {
+        const hls = new Hls({ enableWorker: false });
+        hlsRef.current = hls;
+        hls.loadSource(src);
+        hls.attachMedia(audio);
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          attemptPlay();
+        });
+        hls.on(Hls.Events.ERROR, (_, data) => {
+          if (data.fatal) {
+            console.error("HLS fatal error:", data);
             setIsBuffering(false);
-            alert("عذراً، هذا البث لا يعمل حالياً. قد يكون متوقفاً أو غير متوافق.");
+            setIsPlaying(false);
+            hls.destroy();
+            audio.dispatchEvent(new Event('error'));
           }
         });
+      } else {
+        if (audio.src !== src) {
+          audio.src = src;
+          audio.load();
+        }
+        attemptPlay();
       }
     }
   }, [currentStation]);
@@ -89,21 +129,24 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       audioRef.current.pause();
       setIsPlaying(false);
     } else {
-      const src = currentStation.url_resolved || currentStation.url;
-      if (audioRef.current.src !== src) {
-        audioRef.current.src = src;
-        audioRef.current.load();
+      if (!audioRef.current.src && !hlsRef.current) {
+        const station = currentStation;
+        setCurrentStation(null);
+        setTimeout(() => setCurrentStation(station), 10);
+        return;
       }
       setIsBuffering(true);
       const playPromise = audioRef.current.play();
       if (playPromise !== undefined) {
         playPromise.then(() => {
+          setIsBuffering(false);
           setIsPlaying(true);
         }).catch(e => {
           if (e.name !== 'AbortError') {
             console.error("Play error:", e);
             setIsBuffering(false);
             setIsPlaying(false);
+            if (audioRef.current) audioRef.current.dispatchEvent(new Event('error'));
           }
         });
       }
@@ -111,6 +154,10 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   };
 
   const stopStation = () => {
+    if (hlsRef.current) {
+      hlsRef.current.destroy();
+      hlsRef.current = null;
+    }
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.removeAttribute('src');
@@ -177,11 +224,36 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     const handlePlaying = () => { setIsPlaying(true); setIsBuffering(false); };
     const handlePause = () => setIsPlaying(false);
     const handleWaiting = () => setIsBuffering(true);
-    const handleError = () => {
+    const handleError = async () => {
       setIsBuffering(false);
       setIsPlaying(false);
-      if (currentStation) {
-        // Optionally alert if it's not a generic abort
+      if (currentStation?.stationuuid === 'ertu-quran-egypt' && !isFallback) {
+         try {
+           setIsFallback(true);
+           setIsBuffering(true);
+           const res = await fetch('/api/quran-fallback');
+           const data = await res.json();
+           if (data.url && audio) {
+             if (hlsRef.current) hlsRef.current.destroy();
+             
+             if (data.url.includes('.m3u8') && Hls.isSupported()) {
+               const hls = new Hls({ enableWorker: false });
+               hlsRef.current = hls;
+               hls.loadSource(data.url);
+               hls.attachMedia(audio);
+               hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                 audio.play().catch(console.error);
+               });
+             } else {
+               audio.src = data.url;
+               audio.load();
+               audio.play().catch(console.error);
+             }
+           }
+         } catch (err) {
+           console.error("Fallback error:", err);
+           setIsBuffering(false);
+         }
       }
     };
 
@@ -196,7 +268,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       audio.removeEventListener('waiting', handleWaiting);
       audio.removeEventListener('error', handleError);
     };
-  }, [audioRef.current, currentStation]);
+  }, [audioRef.current, currentStation, isFallback]);
 
   return (
     <PlayerContext.Provider
