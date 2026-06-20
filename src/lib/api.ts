@@ -69,28 +69,6 @@ export async function getQuranRecitersRadios(): Promise<Station[]> {
 export const DEFAULT_STATIONS: Station[] = [
   {
     stationuuid: 'ertu-quran-egypt',
-    name: 'إذاعة القرآن الكريم (مصر)',
-    url: 'https://stream.radiojar.com/8s5u5tpdtwzuv',
-    url_resolved: 'https://stream.radiojar.com/8s5u5tpdtwzuv',
-    tags: 'quran,islamic,egypt,working',
-    country: 'Egypt',
-    language: 'arabic',
-    favicon: '',
-    bitrate: 128
-  },
-  {
-    stationuuid: 'iqraa-channel',
-    name: 'إذاعة قناة اقرأ',
-    url: 'https://playlist.fasttvcdn.com/pl/dlkqw1ftuvuuzkcb4pxdcg/Iqraafasttv3/playlist.m3u8',
-    url_resolved: 'https://playlist.fasttvcdn.com/pl/dlkqw1ftuvuuzkcb4pxdcg/Iqraafasttv3/playlist.m3u8',
-    tags: 'quran,islamic,iqraa',
-    country: 'Saudi Arabia',
-    language: 'arabic',
-    favicon: '',
-    bitrate: 128
-  },
-  {
-    stationuuid: 'abdulbasit-quran',
     name: 'إذاعة عبدالباسط عبدالصمد',
     url: 'https://backup.qurango.net/radio/abdulbasit_abdulsamad_mojawwad',
     url_resolved: 'https://backup.qurango.net/radio/abdulbasit_abdulsamad_mojawwad',

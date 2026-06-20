@@ -278,25 +278,7 @@ export function QuranReader({ viewMode = 'read' }: { viewMode?: 'read' | 'tafsir
         ) : surahText && surahTafsir ? (
           <>
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 pb-4 border-b border-gray-200/50 dark:border-slate-700 gap-4">
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => surahText.number > 1 && loadSurah(surahText.number - 1)}
-                  disabled={surahText.number === 1}
-                  className="text-xs font-bold px-3 py-1.5 bg-amber-100 dark:bg-slate-800 hover:bg-amber-200 dark:hover:bg-slate-700 text-amber-700 dark:text-amber-400 rounded-lg disabled:opacity-30 transition-colors shadow-sm"
-                  title="السورة السابقة"
-                >
-                  السابق
-                </button>
-                <h2 className="text-2xl font-bold text-amber-600 dark:text-amber-400 font-serif drop-shadow-sm">{surahText.name}</h2>
-                <button
-                  onClick={() => surahText.number < 114 && loadSurah(surahText.number + 1)}
-                  disabled={surahText.number === 114}
-                  className="text-xs font-bold px-3 py-1.5 bg-amber-100 dark:bg-slate-800 hover:bg-amber-200 dark:hover:bg-slate-700 text-amber-700 dark:text-amber-400 rounded-lg disabled:opacity-30 transition-colors shadow-sm"
-                  title="السورة التالية"
-                >
-                  التالي
-                </button>
-              </div>
+              <h2 className="text-2xl font-bold text-amber-600 dark:text-amber-400 font-serif drop-shadow-sm">{surahText.name}</h2>
               
               <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
                 <select 
@@ -376,7 +358,7 @@ export function QuranReader({ viewMode = 'read' }: { viewMode?: 'read' | 'tafsir
               </div>
             </div>
             
-            <div className="flex-1 overflow-y-auto pr-2 font-serif leading-loose text-xl text-justify custom-scrollbar flex flex-col relative text-container pb-4">
+            <div className="flex-1 overflow-y-auto pr-2 font-serif leading-loose text-xl text-justify custom-scrollbar flex flex-col relative pb-16">
                {surahText.number !== 1 && surahText.number !== 9 && (
                  <div className="text-center font-bold text-2xl mb-8 text-amber-700 dark:text-amber-300 drop-shadow-md">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</div>
                )}
@@ -384,7 +366,7 @@ export function QuranReader({ viewMode = 'read' }: { viewMode?: 'read' | 'tafsir
                {viewMode === 'read' ? (
                  <>
                    {/* Book Mode Pagination Content */}
-                   <div className="flex-1 flex flex-col justify-start items-center px-4 md:px-12 transition-opacity duration-300">
+                   <div className="flex-1 flex flex-col justify-center items-center px-4 md:px-12 transition-opacity duration-300">
                      <p className="text-3xl leading-[2.5] text-justify">
                        {pages[currentPageIndex]?.map((ayah) => (
                          <span key={ayah.numberInSurah} className={`inline transition-colors ${playingAyah === ayah.number ? 'text-amber-600 dark:text-amber-400 font-bold bg-amber-500/10' : ''}`} onClick={() => playAyahAudio(ayah.number, surahText.number, ayah.numberInSurah)}>
@@ -392,6 +374,27 @@ export function QuranReader({ viewMode = 'read' }: { viewMode?: 'read' | 'tafsir
                          </span>
                        ))}
                      </p>
+                   </div>
+                   
+                   {/* Pagination Controls */}
+                   <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between p-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-t border-amber-200 dark:border-slate-700 rounded-b-xl z-10">
+                     <button 
+                       onClick={() => setCurrentPageIndex(prev => Math.min(pages.length - 1, prev + 1))}
+                       disabled={currentPageIndex === pages.length - 1}
+                       className="p-2 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 hover:bg-amber-200 disabled:opacity-30 transition-colors shadow-sm"
+                     >
+                       <ChevronRight className="w-6 h-6" />
+                     </button>
+                     <span className="font-mono text-sm text-gray-500 dark:text-gray-400">
+                        صفحة {currentPageIndex + 1} من {pages.length}
+                     </span>
+                     <button 
+                       onClick={() => setCurrentPageIndex(prev => Math.max(0, prev - 1))}
+                       disabled={currentPageIndex === 0}
+                       className="p-2 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 hover:bg-amber-200 disabled:opacity-30 transition-colors shadow-sm"
+                     >
+                       <ChevronLeft className="w-6 h-6" />
+                     </button>
                    </div>
                  </>
                ) : (
@@ -445,31 +448,6 @@ export function QuranReader({ viewMode = 'read' }: { viewMode?: 'read' | 'tafsir
                  </div>
                )}
             </div>
-
-            {viewMode === 'read' && pages.length > 0 && surahText && (
-              <div className="mt-4 flex items-center justify-between p-3 bg-white/40 dark:bg-slate-900/40 backdrop-blur-md border border-amber-200 dark:border-slate-700 rounded-xl w-full flex-shrink-0">
-                <button 
-                  onClick={() => setCurrentPageIndex(prev => Math.max(0, prev - 1))}
-                  disabled={currentPageIndex === 0}
-                  className="flex items-center gap-1 px-4 py-2 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 hover:bg-amber-200 disabled:opacity-30 transition-colors shadow-sm text-sm font-bold"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                  السابق
-                </button>
-                <span className="font-mono text-sm text-gray-500 dark:text-gray-400 font-bold">
-                   صفحة {currentPageIndex + 1} من {pages.length}
-                </span>
-                <button 
-                  onClick={() => setCurrentPageIndex(prev => Math.min(pages.length - 1, prev + 1))}
-                  disabled={currentPageIndex === pages.length - 1}
-                  className="flex items-center gap-1 px-4 py-2 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 hover:bg-amber-200 disabled:opacity-30 transition-colors shadow-sm text-sm font-bold"
-                >
-                  التالي
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-              </div>
-            )}
-            
           </>
         ) : null}
       </div>
